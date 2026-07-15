@@ -548,20 +548,22 @@ function ProjectThree({ p }) {
         <div className="md:col-span-6 grid grid-cols-2 gap-4">
           <div className="rounded-2xl border border-white/8 bg-[#0E0E10]/70 p-6">
             <div className="font-mono text-[10px] tracking-[0.25em] text-white/40">EEG · CMF-VIT · TUH</div>
-            <div className="mt-6 h-16 flex items-end gap-1">
-              {Array.from({length:22}).map((_,i)=>(
-                <div key={i} className="flex-1 bg-[#0FA47A]/70" style={{height: `${20+Math.abs(Math.sin(i*0.9))*70}%`}} />
-              ))}
+            <div className="mt-6 h-16 flex items-end gap-1" aria-hidden="true">
+              {Array.from({length:22}).map((_,i)=>{
+                const h = (20 + Math.abs(Math.sin(i*0.9)) * 70).toFixed(2);
+                return <div key={i} className="flex-1 bg-[#0FA47A]/70" style={{height: `${h}%`}} />;
+              })}
             </div>
             <div className="mt-4 font-display text-3xl text-white">88–92%</div>
             <div className="font-mono text-[11px] text-white/45">accuracy · 22 patient records</div>
           </div>
           <div className="rounded-2xl border border-white/8 bg-[#0E0E10]/70 p-6">
             <div className="font-mono text-[10px] tracking-[0.25em] text-white/40">MRI · EFFICIENTNET-B4 · ADNI</div>
-            <div className="mt-6 grid grid-cols-6 gap-1">
-              {Array.from({length:24}).map((_,i)=>(
-                <div key={i} className="aspect-square rounded-sm" style={{background: `rgba(15,164,122,${0.15+((i*7)%10)/25})`}} />
-              ))}
+            <div className="mt-6 grid grid-cols-6 gap-1" aria-hidden="true">
+              {Array.from({length:24}).map((_,i)=>{
+                const a = (0.15 + ((i*7)%10)/25).toFixed(3);
+                return <div key={i} className="aspect-square rounded-sm" style={{background: `rgba(15,164,122,${a})`}} />;
+              })}
             </div>
             <div className="mt-4 font-display text-3xl text-white">97.6%</div>
             <div className="font-mono text-[11px] text-white/45">test acc. · 111 records</div>
