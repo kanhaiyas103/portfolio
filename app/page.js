@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowUpRight, Github, Linkedin, Mail, Phone, ChevronRight, ExternalLink, ArrowRight, ArrowDown, Search } from 'lucide-react';
 
@@ -139,40 +140,62 @@ function Magnetic({ children, className = '', ...rest }) {
 }
 
 /* ---------- HireSense retrieval demo (hero visual) ---------- */
-function HireSenseDemo() {
+function HireSenseDemo({ compact = false }) {
   const queries = [
-    { q: 'senior ML engineer with RAG experience', highlight: ['ML', 'RAG'] },
-    { q: 'full-stack engineer, Next.js, ships fast', highlight: ['Next.js', 'ships'] },
-    { q: 'vector search + Postgres, production', highlight: ['vector', 'Postgres'] },
+    { q: 'senior ML engineer with RAG experience' },
+    { q: 'full-stack engineer, Next.js, ships fast' },
+    { q: 'vector search + Postgres, production' },
+    { q: 'backend engineer, distributed systems' },
   ];
-  const pool = [
-    { name: 'Priya S.', role: 'ML Engineer · 4y', tags: ['RAG', 'FAISS', 'PyTorch'], base: 0.94 },
-    { name: 'Marcus T.', role: 'Full-Stack · 6y', tags: ['Next.js', 'Node', 'AWS'], base: 0.88 },
-    { name: 'Ana L.', role: 'AI Engineer · 3y', tags: ['LLMs', 'Vector', 'FastAPI'], base: 0.86 },
-    { name: 'Rahul D.', role: 'Backend · 5y', tags: ['Postgres', 'pgvector', 'Go'], base: 0.79 },
-    { name: 'Sofia M.', role: 'ML Engineer · 2y', tags: ['NLP', 'Keras'], base: 0.71 },
-  ];
+  const pool = React.useMemo(() => ([
+    { name: 'Priya S.', role: 'ML Engineer · 4y', tags: ['RAG', 'FAISS', 'PyTorch'], base: 0.94, seed: 0.11 },
+    { name: 'Marcus T.', role: 'Full-Stack · 6y', tags: ['Next.js', 'Node', 'AWS'], base: 0.88, seed: 0.63 },
+    { name: 'Ana L.', role: 'AI Engineer · 3y', tags: ['LLMs', 'Vector', 'FastAPI'], base: 0.86, seed: 0.37 },
+    { name: 'Rahul D.', role: 'Backend · 5y', tags: ['Postgres', 'pgvector', 'Go'], base: 0.79, seed: 0.82 },
+    { name: 'Sofia M.', role: 'ML Engineer · 2y', tags: ['NLP', 'Keras'], base: 0.71, seed: 0.24 },
+  ]), []);
   const [qi, setQi] = useState(0);
   const [scores, setScores] = useState(pool.map(p => p.base));
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    const t = setInterval(() => {
+    let cancelled = false;
+    const cycle = async () => {
+      setLoading(true);
+      await new Promise(r => setTimeout(r, 520));
+      if (cancelled) return;
       setQi(v => (v + 1) % queries.length);
-      setScores(pool.map(p => Math.min(0.98, Math.max(0.35, p.base + (Math.random() - 0.45) * 0.3))));
-    }, 3400);
-    return () => clearInterval(t);
-  }, []);
+      // deterministic-ish, but only client-side (post-mount) so hydration is safe
+      setScores(pool.map((p, i) => {
+        const t = (Date.now() / 1200 + p.seed * 7) % 1;
+        const jitter = Math.sin(t * Math.PI * 2) * 0.14;
+        return Math.min(0.98, Math.max(0.42, p.base + jitter - 0.04));
+      }));
+      setLoading(false);
+    };
+    const iv = setInterval(cycle, 4200);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [pool]);
+
   const ranked = pool.map((p, i) => ({ ...p, s: scores[i] })).sort((a, b) => b.s - a.s);
   return (
-    <div className="relative w-full rounded-2xl border border-white/8 bg-[#0E0E10]/70 backdrop-blur-sm overflow-hidden">
+    <div className="relative w-full rounded-2xl border border-white/8 bg-[#0E0E10]/70 backdrop-blur-sm overflow-hidden shadow-[0_30px_80px_-40px_rgba(15,164,122,0.25)]">
       <div className="flex items-center justify-between px-5 py-3 border-b border-white/6">
         <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.25em] text-white/50">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#0FA47A]" /> HIRESENSE · LIVE
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0FA47A]/60 opacity-70" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0FA47A]" />
+          </span>
+          HIRESENSE · LIVE
         </div>
-        <div className="font-mono text-[10px] text-white/30">v2026.06</div>
+        <a href="#work" data-hover className="font-mono text-[10px] tracking-widest text-white/50 hover:text-white inline-flex items-center gap-1.5 group">
+          VIEW LIVE DEMO
+          <ArrowUpRight className="w-3 h-3 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
+        </a>
       </div>
       <div className="px-5 pt-5">
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-          <Search className="w-4 h-4 text-[#0FA47A]" />
+          <Search className={`w-4 h-4 ${loading ? 'text-white/40 animate-pulse' : 'text-[#0FA47A]'}`} />
           <AnimatePresence mode="wait">
             <motion.div key={qi} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.35 }} className="font-mono text-[13px] text-white/85 flex-1 truncate">
@@ -181,12 +204,15 @@ function HireSenseDemo() {
           </AnimatePresence>
           <span className="font-mono text-[10px] text-white/40">⌘K</span>
         </div>
-        <div className="font-mono text-[10px] tracking-[0.25em] text-white/40 mt-5 mb-2">RANKED · RRF(FAISS ⊕ BM25)</div>
+        <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.25em] text-white/40 mt-5 mb-2">
+          <span>RANKED · RRF(FAISS ⊕ BM25)</span>
+          <span className={`transition-opacity ${loading ? 'opacity-100' : 'opacity-0'}`}>SEARCHING…</span>
+        </div>
       </div>
       <div className="px-3 pb-4">
         {ranked.map((r, idx) => (
           <motion.div key={r.name} layout transition={{ type: 'spring', stiffness: 160, damping: 22 }}
-            className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/[0.02]">
+            className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/[0.03] transition-colors">
             <div className="font-mono text-[10px] text-white/30 w-5">{String(idx + 1).padStart(2, '0')}</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
@@ -201,10 +227,11 @@ function HireSenseDemo() {
             </div>
             <div className="w-24 shrink-0">
               <div className="h-1 rounded-full bg-white/8 overflow-hidden">
-                <motion.div animate={{ width: `${r.s * 100}%` }} transition={{ duration: 0.9, ease: [0.65,0,0.35,1] }}
+                <motion.div animate={{ width: `${r.s * 100}%`, opacity: loading ? 0.4 : 1 }}
+                  transition={{ duration: 0.9, ease: [0.65,0,0.35,1] }}
                   className="h-full bg-[#0FA47A]" />
               </div>
-              <div className="font-mono text-[10px] text-white/50 mt-1 text-right">{r.s.toFixed(2)}</div>
+              <div className="font-mono text-[10px] text-white/50 mt-1 text-right tabular-nums">{r.s.toFixed(2)}</div>
             </div>
           </motion.div>
         ))}
@@ -264,7 +291,7 @@ function Hero() {
               SOFTWARE ENGINEER · BUILDING PRODUCTS
             </motion.div>
             <h1 className="font-display font-medium leading-[0.98] tracking-[-0.04em] text-[clamp(2.6rem,7vw,6.5rem)] text-[#F5F4F1]">
-              {['I don’t build','websites. I build','intelligent'].map((line, idx) => (
+              {['I build production','software that solves'].map((line, idx) => (
                 <motion.div key={idx} initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.25 + idx * 0.09, duration: 0.9, ease: [0.16,1,0.3,1] }}>
                   {line}
@@ -272,12 +299,12 @@ function Hero() {
               ))}
               <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.55, duration: 0.9, ease: [0.16,1,0.3,1] }}>
-                <span className="font-serif-display accent italic pr-1">products</span>.
+                <span className="font-serif-display accent italic pr-1">real problems</span>.
               </motion.div>
             </h1>
             <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.7 }}
               className="mt-10 max-w-xl text-white/60 font-body text-[17px] md:text-[19px] leading-[1.6]">
-              I design and ship software that combines applied AI, backend engineering, and thoughtful product craft — from first sketch to production.
+              Software engineer working across applied AI, backend systems, and product. I take problems from first sketch to something running in production — measurable, tested, and used.
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05 }}
               className="mt-12 flex flex-wrap items-center gap-5">
@@ -399,7 +426,7 @@ function ProjectShell({ p, children, tone }) {
   return (
     <motion.article initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-100px' }}
       transition={{ duration: 0.9, ease: [0.16,1,0.3,1] }}
-      className={`relative group py-24 md:py-36 border-t border-white/6`}>
+      className={`relative group py-24 md:py-40 border-t border-white/6 transition-colors duration-500 hover:bg-white/[0.008]`}>
       <Container>
         <div className="flex items-baseline justify-between mb-10">
           <div className="flex items-baseline gap-6">
@@ -542,10 +569,13 @@ function ProjectThree({ p }) {
 
 // Layout 4: LSTM — chart-forward
 function ProjectFour({ p }) {
-  const points = Array.from({length: 60}, (_,i) => {
-    const base = 100 + Math.sin(i/6)*35 + i*0.6;
-    return { x: i, actual: base + Math.sin(i/3)*8, pred: base + Math.sin(i/3)*8 + (Math.random()-0.5)*4 };
-  });
+  const points = React.useMemo(() => (
+    Array.from({length: 60}, (_,i) => {
+      const base = 100 + Math.sin(i/6)*35 + i*0.6;
+      const noise = Math.sin(i*1.7) * 3.2 + Math.cos(i*0.9) * 1.8; // deterministic
+      return { x: i, actual: base + Math.sin(i/3)*8, pred: base + Math.sin(i/3)*8 + noise };
+    })
+  ), []);
   const path = (key) => {
     const w = 600, h = 200; const max = 200; const min = 60;
     return points.map((p_, i) => {
@@ -684,53 +714,93 @@ function Achievements() {
   );
 }
 
+/* ---------- Typing line ---------- */
+function TypingLine({ text, className, speed = 14, onDone }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (n >= text.length) { onDone?.(); return; }
+    const t = setTimeout(() => setN(n + 1), speed);
+    return () => clearTimeout(t);
+  }, [n, text, speed]);
+  return <div className={className}>{text.slice(0, n)}{n < text.length && <span className="text-[#0FA47A] blink">▍</span>}</div>;
+}
+
 /* ---------- Terminal Contact ---------- */
 function Contact() {
   const [history, setHistory] = useState([
-    { t: 'system', v: 'Welcome. Type “help” to see commands, or “hire” to reach out.' },
+    { t: 'system', v: 'Welcome. Type "help" for commands, or "hire" to reach me directly.', typed: true },
   ]);
   const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
   const scroller = useRef(null);
-  useEffect(() => { scroller.current?.scrollTo({ top: 9e9 }); }, [history]);
+  useEffect(() => { scroller.current?.scrollTo({ top: 9e9, behavior: 'smooth' }); }, [history]);
 
-  const run = (raw) => {
+  const emit = async (lines, delayEach = 220) => {
+    setBusy(true);
+    for (const line of lines) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(r => setTimeout(r, delayEach));
+      setHistory(h => [...h, { ...line, typed: false }]);
+    }
+    setBusy(false);
+  };
+
+  const run = async (raw) => {
     const cmd = raw.trim().toLowerCase();
-    const push = (arr) => setHistory(h => [...h, { t: 'user', v: raw }, ...arr]);
-    if (!cmd) return;
-    if (cmd === 'help') return push([
-      { t: 'out', v: 'Commands:' },
-      { t: 'out', v: '  hire       — start a conversation' },
-      { t: 'out', v: '  email      — show email address' },
-      { t: 'out', v: '  phone      — show phone number' },
-      { t: 'out', v: '  github     — open GitHub profile' },
-      { t: 'out', v: '  linkedin   — open LinkedIn profile' },
-      { t: 'out', v: '  projects   — list projects' },
-      { t: 'out', v: '  whoami     — about Kanhaiya' },
-      { t: 'out', v: '  clear      — clear terminal' },
-    ]);
+    if (!cmd || busy) return;
+    setHistory(h => [...h, { t: 'user', v: raw, typed: true }]);
+    if (cmd === 'help') return emit([
+      { t: 'out', v: 'Available commands:' },
+      { t: 'dim', v: '  hire       — start a conversation' },
+      { t: 'dim', v: '  resume     — download my resume' },
+      { t: 'dim', v: '  email      — show email address' },
+      { t: 'dim', v: '  phone      — show phone number' },
+      { t: 'dim', v: '  github     — open GitHub profile' },
+      { t: 'dim', v: '  linkedin   — open LinkedIn profile' },
+      { t: 'dim', v: '  projects   — list selected work' },
+      { t: 'dim', v: '  whoami     — a quick introduction' },
+      { t: 'dim', v: '  clear      — clear the terminal' },
+    ], 60);
     if (cmd.startsWith('hire')) {
-      push([
-        { t: 'ok', v: 'Opening a channel…' },
-        { t: 'ok', v: 'Composing email.' },
+      await emit([
+        { t: 'ok', v: 'Opening a channel.' },
+        { t: 'ok', v: 'Composing email…' },
         { t: 'out', v: `Reach out directly: ${PROFILE.email}` },
-      ]);
-      setTimeout(() => window.location.href = `mailto:${PROFILE.email}?subject=Let%27s%20build%20something`, 700);
+      ], 260);
+      setTimeout(() => window.location.href = `mailto:${PROFILE.email}?subject=Let%27s%20build%20something`, 500);
       return;
     }
-    if (cmd === 'email') return push([{ t: 'out', v: PROFILE.email }]);
-    if (cmd === 'phone') return push([{ t: 'out', v: PROFILE.phone }]);
-    if (cmd === 'github') { push([{ t: 'ok', v: 'Opening GitHub…' }]); window.open(PROFILE.github, '_blank'); return; }
-    if (cmd === 'linkedin') { push([{ t: 'ok', v: 'Opening LinkedIn…' }]); window.open(PROFILE.linkedin, '_blank'); return; }
-    if (cmd === 'projects') return push(PROJECTS.map(p => ({ t: 'out', v: `• ${p.name} — ${p.subtitle}` })));
-    if (cmd === 'whoami') return push([
+    if (cmd === 'resume') return emit([
+      { t: 'ok', v: 'Preparing resume…' },
+      { t: 'out', v: 'Kanhaiya Lal Sharma — Software Engineer.' },
+      { t: 'out', v: 'B.Tech CSE, KIIT (2022–2026). Focus: AI, backend, full-stack.' },
+      { t: 'out', v: `Direct download: kanhaiya-resume.pdf` },
+      { t: 'link', v: '/resume.pdf' },
+    ], 240);
+    if (cmd === 'email') return emit([{ t: 'out', v: PROFILE.email }]);
+    if (cmd === 'phone') return emit([{ t: 'out', v: PROFILE.phone }]);
+    if (cmd === 'github') { await emit([{ t: 'ok', v: 'Opening GitHub…' }]); window.open(PROFILE.github, '_blank'); return; }
+    if (cmd === 'linkedin') { await emit([{ t: 'ok', v: 'Opening LinkedIn…' }]); window.open(PROFILE.linkedin, '_blank'); return; }
+    if (cmd === 'projects') return emit(PROJECTS.map(p => ({ t: 'out', v: `• ${p.name} — ${p.subtitle}` })), 140);
+    if (cmd === 'whoami') return emit([
       { t: 'out', v: 'Kanhaiya Lal Sharma · Software Engineer' },
       { t: 'out', v: `${PROFILE.institute} · Graduating ${PROFILE.graduation}` },
-      { t: 'out', v: 'Focus: applied AI · full-stack · product craft.' },
-    ]);
+      { t: 'out', v: 'I build production software: applied AI, backend, product.' },
+    ], 200);
     if (cmd === 'clear') { setHistory([]); return; }
-    push([{ t: 'err', v: `command not found: ${cmd}. type “help”.` }]);
+    return emit([{ t: 'err', v: `command not found: ${cmd}. type "help".` }]);
   };
   const submit = (e) => { e.preventDefault(); run(input); setInput(''); };
+
+  const colorFor = (t) => (
+    t === 'user' ? 'text-white' :
+    t === 'ok' ? 'text-[#0FA47A]' :
+    t === 'err' ? 'text-rose-400/80' :
+    t === 'system' ? 'text-white/60' :
+    t === 'dim' ? 'text-white/55' :
+    t === 'link' ? 'text-[#0FA47A] underline underline-offset-4' :
+    'text-white/75'
+  );
 
   return (
     <Section id="contact" className="py-28 md:py-40 border-t border-white/6">
@@ -742,21 +812,21 @@ function Contact() {
               Let’s build something <span className="font-serif-display accent">worth building.</span>
             </h2>
             <p className="mt-6 text-white/60 font-body text-[17px] leading-[1.6] max-w-md">
-              Whether you’re hiring, collaborating, or just curious — I read every message. The fastest way to reach me is email, but the terminal works too.
+              I read every message. Fastest way to reach me is email — the terminal on the right works too, if you prefer keyboards.
             </p>
-            <div className="mt-10 space-y-4">
-              <a href={`mailto:${PROFILE.email}`} data-hover className="flex items-center justify-between py-4 border-t border-white/8 group">
+            <div className="mt-10 space-y-0">
+              <a href={`mailto:${PROFILE.email}`} data-hover className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
                 <span className="flex items-center gap-3 text-white/85"><Mail className="w-4 h-4 text-[#0FA47A]" />{PROFILE.email}</span>
                 <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
               </a>
               <div className="flex items-center justify-between py-4 border-t border-white/8">
                 <span className="flex items-center gap-3 text-white/85"><Phone className="w-4 h-4 text-[#0FA47A]" />{PROFILE.phone}</span>
               </div>
-              <a href={PROFILE.github} data-hover className="flex items-center justify-between py-4 border-t border-white/8 group">
+              <a href={PROFILE.github} data-hover className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
                 <span className="flex items-center gap-3 text-white/85"><Github className="w-4 h-4 text-[#0FA47A]" />GitHub</span>
                 <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
               </a>
-              <a href={PROFILE.linkedin} data-hover className="flex items-center justify-between py-4 border-t border-b border-white/8 group">
+              <a href={PROFILE.linkedin} data-hover className="flex items-center justify-between py-4 border-t border-b border-white/8 group hover:pl-1 transition-all">
                 <span className="flex items-center gap-3 text-white/85"><Linkedin className="w-4 h-4 text-[#0FA47A]" />LinkedIn</span>
                 <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
               </a>
@@ -770,25 +840,27 @@ function Contact() {
                 <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
                 <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
                 <span className="ml-3 font-mono text-[11px] text-white/45">kanhaiya — terminal</span>
-                <span className="ml-auto font-mono text-[10px] text-white/45 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#0FA47A]"/>ready</span>
+                <span className="ml-auto font-mono text-[10px] text-white/45 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#0FA47A]"/>{busy ? 'running…' : 'ready'}</span>
               </div>
-              <div ref={scroller} className="p-5 md:p-7 h-[420px] overflow-y-auto font-mono text-[13px] leading-relaxed space-y-1">
-                {history.map((h, i) => (
-                  <div key={i} className={
-                    h.t === 'user' ? 'text-white' :
-                    h.t === 'ok' ? 'text-[#0FA47A]' :
-                    h.t === 'err' ? 'text-rose-400/80' :
-                    h.t === 'system' ? 'text-white/60' :
-                    'text-white/70'
-                  }>
-                    {h.t === 'user' ? <span className="text-[#0FA47A]">→ </span> : null}{h.v}
-                  </div>
-                ))}
+              <div ref={scroller} className="p-5 md:p-7 h-[440px] overflow-y-auto font-mono text-[13px] leading-relaxed space-y-1">
+                {history.map((h, i) => {
+                  const cls = colorFor(h.t);
+                  const prefix = h.t === 'user' ? <span className="text-[#0FA47A]">→ </span> : null;
+                  if (h.typed) return <div key={i} className={cls}>{prefix}{h.v}</div>;
+                  return (
+                    <TypingLine key={i}
+                      text={h.v}
+                      className={cls}
+                      speed={h.t === 'err' ? 10 : 12}
+                    />
+                  );
+                })}
                 <form onSubmit={submit} className="flex items-center gap-2 pt-2">
                   <span className="text-[#0FA47A]">→</span>
                   <input autoFocus value={input} onChange={(e) => setInput(e.target.value)}
-                    className="flex-1 bg-transparent outline-none text-white placeholder:text-white/25"
-                    placeholder="try: hire" />
+                    disabled={busy}
+                    className="flex-1 bg-transparent outline-none text-white placeholder:text-white/25 disabled:opacity-40"
+                    placeholder={busy ? '' : 'try: help'} />
                   <span className="w-1.5 h-4 bg-[#0FA47A] blink" />
                 </form>
               </div>
@@ -803,15 +875,25 @@ function Contact() {
 /* ---------- Footer ---------- */
 function Footer() {
   return (
-    <footer className="relative border-t border-white/6 py-16">
+    <footer className="relative border-t border-white/6 pt-24 pb-14">
       <Container>
         <div className="font-display font-medium text-[clamp(3rem,10vw,9rem)] leading-[0.9] tracking-[-0.04em] text-white/95">
           Build. Ship. <span className="font-serif-display accent">Repeat.</span>
         </div>
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-4 font-mono text-[11px] text-white/40">
-          <div>© 2026 Kanhaiya Lal Sharma — Crafted with care.</div>
-          <div>Next.js · Framer Motion · Tailwind</div>
+        <div className="mt-16 grid md:grid-cols-3 gap-8 items-end border-t border-white/6 pt-8">
+          <div className="text-white/55 text-[13px] font-body leading-relaxed">
+            Designed &amp; engineered by <span className="text-white/90">Kanhaiya Sharma</span>.
+          </div>
+          <div className="text-white/45 text-[13px] font-body leading-relaxed md:text-center">
+            Built with Next.js, TypeScript, Tailwind CSS, and Framer Motion.
+          </div>
+          <div className="flex md:justify-end gap-5 text-[13px] font-mono text-white/45">
+            <a href={`mailto:${PROFILE.email}`} data-hover className="link-underline hover:text-white">Email</a>
+            <a href={PROFILE.github} data-hover className="link-underline hover:text-white">GitHub</a>
+            <a href={PROFILE.linkedin} data-hover className="link-underline hover:text-white">LinkedIn</a>
+          </div>
         </div>
+        <div className="mt-8 font-mono text-[11px] text-white/30">© 2026 Kanhaiya Lal Sharma. All rights reserved.</div>
       </Container>
     </footer>
   );
