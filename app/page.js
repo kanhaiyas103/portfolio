@@ -11,7 +11,7 @@ const PROFILE = {
   // TODO: replace with real URLs before deploy
   github: 'https://github.com/', // TODO
   linkedin: 'https://linkedin.com/in/', // TODO
-  resume: '/resume.pdf', // TODO: add resume PDF to /public
+  resume: '/resume.pdf',
   graduation: '2026',
   institute: 'KIIT, Bhubaneswar',
 };
@@ -1004,8 +1004,15 @@ function Contact() {
                 <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
               </a>
               <a href={PROFILE.linkedin} data-hover target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile (opens in new tab)"
-                className="flex items-center justify-between py-4 border-t border-b border-white/8 group hover:pl-1 transition-all">
+                className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
                 <span className="flex items-center gap-3 text-white/85"><Linkedin className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />LinkedIn</span>
+                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
+              </a>
+              <a href={PROFILE.resume} data-hover target="_blank" rel="noopener noreferrer"
+                onClick={() => { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ach:resume')); }}
+                aria-label="Download resume (PDF, opens in a new tab)"
+                className="flex items-center justify-between py-4 border-t border-b border-white/8 group hover:pl-1 transition-all">
+                <span className="flex items-center gap-3 text-white/85"><ExternalLink className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />Download Resume <span className="text-white/40 font-mono text-[11px]">PDF</span></span>
                 <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
               </a>
             </div>
