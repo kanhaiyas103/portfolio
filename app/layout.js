@@ -58,7 +58,7 @@ const PERSON_JSONLD = {
   telephone: '+91-9123678922',
   address: { '@type': 'PostalAddress', addressLocality: 'Bhubaneswar', addressCountry: 'IN' },
   knowsAbout: ['Applied AI', 'Retrieval-Augmented Generation', 'Backend Engineering', 'Full-Stack Development', 'System Design'],
-  sameAs: [SITE_URL],
+  sameAs: [SITE_URL, 'https://github.com/kanhaiyas103', 'https://www.linkedin.com/in/kanhaiya-lal-sharma-a70a72293'],
 };
 
 const WEBSITE_JSONLD = {

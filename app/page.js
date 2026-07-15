@@ -8,9 +8,8 @@ const PROFILE = {
   name: 'Kanhaiya Lal Sharma',
   email: 'kanhaiyals2019@gmail.com',
   phone: '+91 9123678922',
-  // TODO: replace with real URLs before deploy
-  github: 'https://github.com/', // TODO
-  linkedin: 'https://linkedin.com/in/', // TODO
+  github: 'https://github.com/kanhaiyas103',
+  linkedin: 'https://www.linkedin.com/in/kanhaiya-lal-sharma-a70a72293',
   resume: '/resume.pdf',
   graduation: '2026',
   institute: 'KIIT, Bhubaneswar',
@@ -56,12 +55,11 @@ const PROJECTS = [
 ];
 
 const TIMELINE = [
-  { year: '2022', title: 'B.Tech, Computer Science', body: 'Enrolled at KIIT Bhubaneswar. First Python.' },
-  { year: '2023', title: 'AI Masterclass', body: 'Fell for neural networks — supervised, unsupervised, everything.' },
-  { year: '2024', title: 'ML in production', body: 'LSTMs, CNNs, Vision Transformers on real datasets.' },
-  { year: '2024', title: 'Full-stack shift', body: 'Next.js, FastAPI, Postgres, Supabase — the whole stack.' },
-  { year: '2025', title: 'HireSense AI ships', body: 'End-to-end RAG product. Live. Used in real conversations.' },
-  { year: '2026', title: 'Graduating', body: 'Looking for a team that ships intelligent software.' },
+  { year: '2022', title: 'Started B.Tech, Computer Science', body: 'Joined KIIT University, Bhubaneswar. Built a strong foundation in programming, algorithms, and core computer science.' },
+  { year: '2023', title: 'AI and full-stack, side by side', body: 'Explored AI and full-stack development through practical projects using Python, machine learning, and modern web technologies.' },
+  { year: '2024', title: 'End-to-end software', body: 'Shipped end-to-end projects across backend systems, APIs, deployment, and machine learning — building the muscle for real products.' },
+  { year: '2025', title: 'Applied AI and RAG', body: 'Focused on applied AI, multimodal machine learning, and retrieval-augmented generation through academic and personal projects.' },
+  { year: '2026', title: 'Shipping production AI', body: 'Built and deployed production-ready software including HireSense AI and other AI-powered applications. Open to Software Engineer and AI Engineer roles.' },
 ];
 
 const SKILLS = [
@@ -492,7 +490,7 @@ function About() {
     <Section id="about" className="py-28 md:py-40">
       <Container>
         <SectionHeader index="01" kicker="ORIGIN" title="From first line of code to" accentWord="production."
-          aside="Four years of building — from ML notebooks to full-stack products shipping to real users. The story in six moments." />
+          aside="Five years of building — from foundations in CS to shipping production AI. The path, in five moments." />
         <div className="mt-20 grid md:grid-cols-12 gap-10">
           <div className="md:col-span-4 md:sticky md:top-32 self-start">
             <motion.div
