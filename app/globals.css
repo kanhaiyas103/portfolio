@@ -93,6 +93,25 @@ body { cursor: none; }
 @keyframes marquee { 0% { transform: translateX(0);} 100% { transform: translateX(-50%);} }
 .marquee-track { animation: marquee 55s linear infinite; }
 
+/* Focus states — accessible & premium */
+a:focus-visible, button:focus-visible, input:focus-visible, [role='button']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(15,164,122,0.7), 0 0 0 4px rgba(15,164,122,0.15);
+  border-radius: 6px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .marquee-track { animation: none !important; }
+  .blink { animation: none !important; }
+}
+
 /* Blink cursor */
 @keyframes blink { 50% { opacity: 0; } }
 .blink { animation: blink 1s steps(1) infinite; }

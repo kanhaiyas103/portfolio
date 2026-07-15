@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowUpRight, Github, Linkedin, Mail, Phone, ChevronRight, ExternalLink, ArrowRight, ArrowDown, Search } from 'lucide-react';
 
@@ -9,8 +8,10 @@ const PROFILE = {
   name: 'Kanhaiya Lal Sharma',
   email: 'kanhaiyals2019@gmail.com',
   phone: '+91 9123678922',
-  github: 'https://github.com/',
-  linkedin: 'https://linkedin.com/',
+  // TODO: replace with real URLs before deploy
+  github: 'https://github.com/', // TODO
+  linkedin: 'https://linkedin.com/in/', // TODO
+  resume: '/resume.pdf', // TODO: add resume PDF to /public
   graduation: '2026',
   institute: 'KIIT, Bhubaneswar',
 };
@@ -84,7 +85,15 @@ const ACHIEVEMENTS = [
 function CustomCursor() {
   const dot = useRef(null); const ring = useRef(null);
   useEffect(() => {
-    let rx = 0, ry = 0, dx = 0, dy = 0;
+    // Respect reduced-motion and touch devices
+    if (typeof window === 'undefined') return;
+    const isTouch = window.matchMedia('(hover: none)').matches;
+    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (isTouch || isReduced) {
+      document.body.style.cursor = 'auto';
+      return;
+    }
+    let rx = 0, ry = 0, dx = 0, dy = 0, rafId;
     const onMove = (e) => {
       dx = e.clientX; dy = e.clientY;
       if (dot.current) dot.current.style.transform = `translate(${dx}px, ${dy}px) translate(-50%,-50%)`;
@@ -92,19 +101,19 @@ function CustomCursor() {
     const raf = () => {
       rx += (dx - rx) * 0.2; ry += (dy - ry) * 0.2;
       if (ring.current) ring.current.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf);
     };
     const onOver = (e) => {
       const t = e.target;
-      if (t.closest('a,button,[data-hover]')) ring.current?.classList.add('hover');
+      if (t.closest('a,button,[data-hover],input,textarea')) ring.current?.classList.add('hover');
       else ring.current?.classList.remove('hover');
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseover', onOver);
-    const id = requestAnimationFrame(raf);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseover', onOver); cancelAnimationFrame(id); };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseover', onOver, { passive: true });
+    rafId = requestAnimationFrame(raf);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseover', onOver); cancelAnimationFrame(rafId); };
   }, []);
-  return (<><div ref={ring} className="cursor-ring" /><div ref={dot} className="cursor-dot" /></>);
+  return (<><div ref={ring} className="cursor-ring" aria-hidden="true" /><div ref={dot} className="cursor-dot" aria-hidden="true" /></>);
 }
 
 /* ---------- Boot: minimal editorial intro ---------- */
@@ -428,15 +437,15 @@ function ProjectShell({ p, children, tone }) {
       transition={{ duration: 0.9, ease: [0.16,1,0.3,1] }}
       className={`relative group py-24 md:py-40 border-t border-white/6 transition-colors duration-500 hover:bg-white/[0.008]`}>
       <Container>
-        <div className="flex items-baseline justify-between mb-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-y-4 mb-10">
           <div className="flex items-baseline gap-6">
             <span className="font-mono text-[11px] tracking-[0.3em] text-white/40">{p.num}</span>
             <span className="font-mono text-[11px] tracking-[0.3em] text-white/40">{tone || 'PROJECT'}</span>
           </div>
-          <div className="flex items-center gap-3">
-            {p.links.demo && <a data-hover href={p.links.demo} className="chip hover:border-[#0FA47A]/40 hover:text-white"><ExternalLink className="w-3 h-3"/> Live</a>}
-            {p.links.github && <a data-hover href={p.links.github} className="chip hover:border-[#0FA47A]/40 hover:text-white"><Github className="w-3 h-3"/> Code</a>}
-            {p.links.study && <a data-hover href={p.links.study} className="chip hover:border-[#0FA47A]/40 hover:text-white">Case Study <ChevronRight className="w-3 h-3"/></a>}
+          <div className="flex flex-wrap items-center gap-3">
+            {p.links.demo && <a data-hover href={p.links.demo} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} live demo (opens in new tab)`} className="chip hover:border-[#0FA47A]/40 hover:text-white"><ExternalLink className="w-3 h-3" aria-hidden="true"/> Live</a>}
+            {p.links.github && <a data-hover href={p.links.github} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} source on GitHub (opens in new tab)`} className="chip hover:border-[#0FA47A]/40 hover:text-white"><Github className="w-3 h-3" aria-hidden="true"/> Code</a>}
+            {p.links.study && <a data-hover href={p.links.study} aria-label={`${p.name} case study`} className="chip hover:border-[#0FA47A]/40 hover:text-white">Case Study <ChevronRight className="w-3 h-3" aria-hidden="true"/></a>}
           </div>
         </div>
         {children}
@@ -738,7 +747,6 @@ function Contact() {
   const emit = async (lines, delayEach = 220) => {
     setBusy(true);
     for (const line of lines) {
-      // eslint-disable-next-line no-await-in-loop
       await new Promise(r => setTimeout(r, delayEach));
       setHistory(h => [...h, { ...line, typed: false }]);
     }
@@ -770,17 +778,16 @@ function Contact() {
       setTimeout(() => window.location.href = `mailto:${PROFILE.email}?subject=Let%27s%20build%20something`, 500);
       return;
     }
-    if (cmd === 'resume') return emit([
-      { t: 'ok', v: 'Preparing resume…' },
-      { t: 'out', v: 'Kanhaiya Lal Sharma — Software Engineer.' },
-      { t: 'out', v: 'B.Tech CSE, KIIT (2022–2026). Focus: AI, backend, full-stack.' },
-      { t: 'out', v: `Direct download: kanhaiya-resume.pdf` },
-      { t: 'link', v: '/resume.pdf' },
-    ], 240);
+    if (cmd === 'resume') { setTimeout(() => window.open(PROFILE.resume, '_blank', 'noopener,noreferrer'), 900); return emit([
+      { t: 'ok', v: 'Preparing resume\u2026' },
+      { t: 'out', v: 'Kanhaiya Lal Sharma \u2014 Software Engineer.' },
+      { t: 'out', v: 'B.Tech CSE, KIIT (2022\u20132026). Focus: AI, backend, full-stack.' },
+      { t: 'out', v: `Direct download: ${PROFILE.resume}` },
+    ], 240); }
     if (cmd === 'email') return emit([{ t: 'out', v: PROFILE.email }]);
     if (cmd === 'phone') return emit([{ t: 'out', v: PROFILE.phone }]);
-    if (cmd === 'github') { await emit([{ t: 'ok', v: 'Opening GitHub…' }]); window.open(PROFILE.github, '_blank'); return; }
-    if (cmd === 'linkedin') { await emit([{ t: 'ok', v: 'Opening LinkedIn…' }]); window.open(PROFILE.linkedin, '_blank'); return; }
+    if (cmd === 'github') { await emit([{ t: 'ok', v: 'Opening GitHub\u2026' }]); window.open(PROFILE.github, '_blank', 'noopener,noreferrer'); return; }
+    if (cmd === 'linkedin') { await emit([{ t: 'ok', v: 'Opening LinkedIn\u2026' }]); window.open(PROFILE.linkedin, '_blank', 'noopener,noreferrer'); return; }
     if (cmd === 'projects') return emit(PROJECTS.map(p => ({ t: 'out', v: `• ${p.name} — ${p.subtitle}` })), 140);
     if (cmd === 'whoami') return emit([
       { t: 'out', v: 'Kanhaiya Lal Sharma · Software Engineer' },
@@ -815,20 +822,23 @@ function Contact() {
               I read every message. Fastest way to reach me is email — the terminal on the right works too, if you prefer keyboards.
             </p>
             <div className="mt-10 space-y-0">
-              <a href={`mailto:${PROFILE.email}`} data-hover className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
-                <span className="flex items-center gap-3 text-white/85"><Mail className="w-4 h-4 text-[#0FA47A]" />{PROFILE.email}</span>
-                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
+              <a href={`mailto:${PROFILE.email}`} data-hover aria-label={`Email ${PROFILE.email}`}
+                className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
+                <span className="flex items-center gap-3 text-white/85"><Mail className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />{PROFILE.email}</span>
+                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
               </a>
               <div className="flex items-center justify-between py-4 border-t border-white/8">
-                <span className="flex items-center gap-3 text-white/85"><Phone className="w-4 h-4 text-[#0FA47A]" />{PROFILE.phone}</span>
+                <span className="flex items-center gap-3 text-white/85"><Phone className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />{PROFILE.phone}</span>
               </div>
-              <a href={PROFILE.github} data-hover className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
-                <span className="flex items-center gap-3 text-white/85"><Github className="w-4 h-4 text-[#0FA47A]" />GitHub</span>
-                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
+              <a href={PROFILE.github} data-hover target="_blank" rel="noopener noreferrer" aria-label="GitHub profile (opens in new tab)"
+                className="flex items-center justify-between py-4 border-t border-white/8 group hover:pl-1 transition-all">
+                <span className="flex items-center gap-3 text-white/85"><Github className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />GitHub</span>
+                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
               </a>
-              <a href={PROFILE.linkedin} data-hover className="flex items-center justify-between py-4 border-t border-b border-white/8 group hover:pl-1 transition-all">
-                <span className="flex items-center gap-3 text-white/85"><Linkedin className="w-4 h-4 text-[#0FA47A]" />LinkedIn</span>
-                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
+              <a href={PROFILE.linkedin} data-hover target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile (opens in new tab)"
+                className="flex items-center justify-between py-4 border-t border-b border-white/8 group hover:pl-1 transition-all">
+                <span className="flex items-center gap-3 text-white/85"><Linkedin className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />LinkedIn</span>
+                <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
               </a>
             </div>
           </div>
@@ -888,9 +898,9 @@ function Footer() {
             Built with Next.js, TypeScript, Tailwind CSS, and Framer Motion.
           </div>
           <div className="flex md:justify-end gap-5 text-[13px] font-mono text-white/45">
-            <a href={`mailto:${PROFILE.email}`} data-hover className="link-underline hover:text-white">Email</a>
-            <a href={PROFILE.github} data-hover className="link-underline hover:text-white">GitHub</a>
-            <a href={PROFILE.linkedin} data-hover className="link-underline hover:text-white">LinkedIn</a>
+            <a href={`mailto:${PROFILE.email}`} data-hover className="link-underline hover:text-white" aria-label={`Email ${PROFILE.email}`}>Email</a>
+            <a href={PROFILE.github} data-hover target="_blank" rel="noopener noreferrer" className="link-underline hover:text-white" aria-label="GitHub (opens in new tab)">GitHub</a>
+            <a href={PROFILE.linkedin} data-hover target="_blank" rel="noopener noreferrer" className="link-underline hover:text-white" aria-label="LinkedIn (opens in new tab)">LinkedIn</a>
           </div>
         </div>
         <div className="mt-8 font-mono text-[11px] text-white/30">© 2026 Kanhaiya Lal Sharma. All rights reserved.</div>
