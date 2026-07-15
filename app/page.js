@@ -24,7 +24,7 @@ const PROJECTS = [
     solution: 'FAISS vector search fused with lexical retrieval via Reciprocal Rank Fusion, wrapped in a stateless FastAPI service and a Next.js 15 UI. Fully live, publicly used.',
     stack: ['Next.js 15', 'React 19', 'FastAPI', 'FAISS', 'RRF', 'TypeScript', 'Vercel', 'Hugging Face'],
     metrics: [ { k: '377', v: 'records indexed' }, { k: '<1s', v: 'query latency' }, { k: 'Live', v: 'in production' } ],
-    links: { demo: '#', github: '#', study: '#' },
+    links: { demo: 'https://hiresense-ai-roan.vercel.app/', github: '#', study: '#' },
   },
   {
     id: 'legal', num: '02', name: 'Legal AI Platform', subtitle: 'Document Automation & Analysis',
@@ -80,6 +80,96 @@ const ACHIEVEMENTS = [
   { k: 500, suffix: '+', label: 'GitHub Commits' },
   { k: 4, suffix: 'yrs', label: 'Engineering' },
 ];
+
+
+/* ---------- Engineering Notes data ---------- */
+const ENG_NOTES = {
+  hiresense: {
+    problem: 'Recruiters lose hours sifting unstructured resumes. Pure semantic search hallucinates and misses exact skills; pure lexical misses meaning.',
+    architecture: 'Next.js 15 + React 19 UI → FastAPI service (stateless) → FAISS vector index + BM25 lexical index → Reciprocal Rank Fusion → ranked candidates with score. Deployed to Vercel (edge) and Hugging Face Spaces (inference).',
+    decisions: [
+      'FAISS over pgvector — faster iteration, no DB coupling for a single-tenant demo.',
+      'RRF over learned rerankers — deterministic, explainable, low latency, no fine-tuning needed.',
+      'FastAPI stateless — trivial to scale horizontally and cache.',
+    ],
+    challenges: [
+      'Cold start on Spaces — mitigated with a pinned warm ping.',
+      'Score calibration between two very different retrievers — solved by rank-based fusion (RRF) instead of score fusion.',
+    ],
+    tradeoffs: [
+      'No learned reranker means slightly lower ceiling on niche queries, but strong baseline out of the box.',
+      'Single-tenant demo — no auth / RBAC yet; production tenant story would need Postgres row-level security.',
+    ],
+    future: [
+      'LLM reranker on top-20 for niche queries.',
+      'Persisted candidate embeddings in pgvector for multi-tenant use.',
+      'Feedback loop to fine-tune fusion weights per team.',
+    ],
+  },
+  legal: {
+    problem: 'Legal teams re-read the same clauses across hundreds of contracts. Answers need citations, not summaries.',
+    architecture: 'Next.js UI → Supabase (Postgres + pgvector) → LLM-powered chunker + clause extractor → signed URL streaming → SWR frontend cache. Edge runtime for query endpoints.',
+    decisions: [
+      'pgvector over standalone vector DB — one primitive, one source of truth.',
+      'Signed URLs for documents — no proxying, no bandwidth cost.',
+      'Chunk with structure-aware splitter (headings, sections) rather than fixed tokens.',
+    ],
+    challenges: [
+      'Overlapping clauses across pages — solved with sentence-boundary overlap windows.',
+      'Auth0 + Supabase RLS wiring — resolved with a JWT template mapping to Supabase claims.',
+    ],
+    tradeoffs: [
+      'pgvector limits ANN throughput vs. FAISS at very large scale — acceptable up to ~1M chunks.',
+      'Structure-aware chunking is slower to ingest but produces better retrieval quality.',
+    ],
+    future: [
+      'Redlining view with diff-aware citations.',
+      'Multi-document reasoning with an agentic loop.',
+    ],
+  },
+  twin: {
+    problem: 'Early detection of cognitive disorders benefits from fusing modalities (EEG + MRI). Most work sticks to a single modality.',
+    architecture: 'Two independent branches — CMF-ViT for EEG (TUH dataset) and EfficientNet-B4 for MRI (ADNI). Softmax outputs combined via a late-fusion decision layer.',
+    decisions: [
+      'Modality-specific encoders instead of a joint model — cleaner training, easier interpretability.',
+      'EfficientNet-B4 for MRI — strong accuracy/parameter trade-off on 111 volumes.',
+      'CMF-ViT for EEG — captures cross-channel temporal patterns better than 1D CNNs at this scale.',
+    ],
+    challenges: [
+      'Class imbalance in EEG dataset — handled with focal loss + oversampling.',
+      'Slice selection for MRI — used middle-N axial slices per subject to stabilize training.',
+    ],
+    tradeoffs: [
+      'Late fusion is simple but caps ceiling vs. joint representation learning.',
+      'Modality dropout not yet implemented — model degrades gracefully but not gracefully-and-calibrated.',
+    ],
+    future: [
+      'Joint embedding space + contrastive alignment across modalities.',
+      'Longitudinal signal — track same subject over time.',
+    ],
+  },
+  lstm: {
+    problem: 'Financial time-series are noisy and non-stationary. Naive models overfit and produce unstable forecasts.',
+    architecture: '3-layer stacked LSTM on 5,000+ daily points → EarlyStopping + LR scheduling → walk-forward validation → RMSE/MAE/R² reporting.',
+    decisions: [
+      'Stacked LSTM over Transformer — small data, LSTM inductive bias helps.',
+      'Walk-forward CV over random splits — respects time causality.',
+      'EarlyStopping on val loss, not train loss — reduces overfitting.',
+    ],
+    challenges: [
+      'Val loss oscillated early — solved with LR scheduling (ReduceLROnPlateau).',
+      'Scaler leakage — moved to per-fold fit_transform.',
+    ],
+    tradeoffs: [
+      'LSTM captures short-range dependencies well but struggles with regime changes.',
+      'Univariate only — no exogenous features (volume, macro) yet.',
+    ],
+    future: [
+      'Add exogenous features and Temporal Fusion Transformer for comparison.',
+      'Monte-Carlo dropout for uncertainty bounds.',
+    ],
+  },
+};
 
 /* ---------- Custom Cursor ---------- */
 function CustomCursor() {
@@ -197,9 +287,13 @@ function HireSenseDemo({ compact = false }) {
           </span>
           HIRESENSE · LIVE
         </div>
-        <a href="#work" data-hover className="font-mono text-[10px] tracking-widest text-white/50 hover:text-white inline-flex items-center gap-1.5 group">
+        <a href="https://hiresense-ai-roan.vercel.app/" target="_blank" rel="noopener noreferrer"
+          data-hover
+          onClick={() => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('ach:hiresense'))}
+          aria-label="Open HireSense AI live demo in a new tab"
+          className="font-mono text-[10px] tracking-widest text-white/50 hover:text-[#0FA47A] inline-flex items-center gap-1.5 group transition-colors">
           VIEW LIVE DEMO
-          <ArrowUpRight className="w-3 h-3 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" />
+          <ArrowUpRight className="w-3 h-3 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition" aria-hidden="true" />
         </a>
       </div>
       <div className="px-5 pt-5">
@@ -274,6 +368,7 @@ function Nav() {
           <span className="w-1.5 h-1.5 rounded-full bg-[#0FA47A]" /> Available · 2026
           <ArrowUpRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
         </a>
+        <KbdHint />
       </Container>
     </nav>
   );
@@ -400,6 +495,21 @@ function About() {
           aside="Four years of building — from ML notebooks to full-stack products shipping to real users. The story in six moments." />
         <div className="mt-20 grid md:grid-cols-12 gap-10">
           <div className="md:col-span-4 md:sticky md:top-32 self-start">
+            <motion.div
+              initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.9, ease: [0.16,1,0.3,1] }}
+              className="mb-8 w-[140px]">
+              <div className="relative rounded-2xl border border-white/12 bg-[#0E0E10] overflow-hidden aspect-[4/5] shadow-[0_20px_60px_-30px_rgba(0,0,0,0.6)]">
+                <div className="absolute inset-0 grayscale contrast-125 opacity-90"
+                  style={{ background: 'linear-gradient(180deg, rgba(245,244,241,0.10) 0%, rgba(245,244,241,0.03) 60%, transparent 100%)' }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="font-serif-display italic text-white/30 text-5xl">K</span>
+                </div>
+                <div className="absolute bottom-2 left-2 right-2 font-mono text-[9px] tracking-[0.25em] text-white/40">PORTRAIT · TBA</div>
+              </div>
+            </motion.div>
             <div className="font-serif-display italic text-white/85 text-2xl leading-snug">
               “Build things that work. Ship them. Learn what breaks. Repeat.”
             </div>
@@ -432,6 +542,7 @@ function About() {
 
 /* ---------- Projects (unique layouts each) ---------- */
 function ProjectShell({ p, children, tone }) {
+  const [notesOpen, setNotesOpen] = useState(false);
   return (
     <motion.article initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-100px' }}
       transition={{ duration: 0.9, ease: [0.16,1,0.3,1] }}
@@ -443,13 +554,17 @@ function ProjectShell({ p, children, tone }) {
             <span className="font-mono text-[11px] tracking-[0.3em] text-white/40">{tone || 'PROJECT'}</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {p.links.demo && <a data-hover href={p.links.demo} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} live demo (opens in new tab)`} className="chip hover:border-[#0FA47A]/40 hover:text-white"><ExternalLink className="w-3 h-3" aria-hidden="true"/> Live</a>}
-            {p.links.github && <a data-hover href={p.links.github} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} source on GitHub (opens in new tab)`} className="chip hover:border-[#0FA47A]/40 hover:text-white"><Github className="w-3 h-3" aria-hidden="true"/> Code</a>}
-            {p.links.study && <a data-hover href={p.links.study} aria-label={`${p.name} case study`} className="chip hover:border-[#0FA47A]/40 hover:text-white">Case Study <ChevronRight className="w-3 h-3" aria-hidden="true"/></a>}
+            {p.links.demo && p.links.demo !== '#' && <a data-hover href={p.links.demo} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} live demo (opens in new tab)`} className="chip hover:border-[#0FA47A]/40 hover:text-white"><ExternalLink className="w-3 h-3" aria-hidden="true"/> Live</a>}
+            {p.links.github && p.links.github !== '#' && <a data-hover href={p.links.github} target="_blank" rel="noopener noreferrer" aria-label={`${p.name} source on GitHub (opens in new tab)`} className="chip hover:border-[#0FA47A]/40 hover:text-white"><Github className="w-3 h-3" aria-hidden="true"/> Code</a>}
+            <button data-hover onClick={() => setNotesOpen(true)} aria-label={`Open engineering notes for ${p.name}`}
+              className="chip hover:border-[#0FA47A]/40 hover:text-white">
+              Engineering Notes <ArrowUpRight className="w-3 h-3" aria-hidden="true"/>
+            </button>
           </div>
         </div>
         {children}
       </Container>
+      <EngineeringNotesDrawer open={notesOpen} onClose={() => setNotesOpen(false)} projectName={p.name} notes={ENG_NOTES[p.id]} />
     </motion.article>
   );
 }
@@ -644,6 +759,17 @@ function ProjectFour({ p }) {
 }
 
 function Projects() {
+  const endRef = useRef(null);
+  useEffect(() => {
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        window.dispatchEvent(new CustomEvent('ach:projects'));
+        io.disconnect();
+      }
+    }, { threshold: 0.4 });
+    if (endRef.current) io.observe(endRef.current);
+    return () => io.disconnect();
+  }, []);
   return (
     <Section id="work">
       <Container className="pt-28 md:pt-40">
@@ -655,6 +781,7 @@ function Projects() {
         <ProjectTwo p={PROJECTS[1]} />
         <ProjectThree p={PROJECTS[2]} />
         <ProjectFour p={PROJECTS[3]} />
+        <div ref={endRef} aria-hidden="true" />
       </div>
     </Section>
   );
@@ -761,41 +888,71 @@ function Contact() {
     setHistory(h => [...h, { t: 'user', v: raw, typed: true }]);
     if (cmd === 'help') return emit([
       { t: 'out', v: 'Available commands:' },
-      { t: 'dim', v: '  hire       — start a conversation' },
-      { t: 'dim', v: '  resume     — download my resume' },
-      { t: 'dim', v: '  email      — show email address' },
-      { t: 'dim', v: '  phone      — show phone number' },
-      { t: 'dim', v: '  github     — open GitHub profile' },
-      { t: 'dim', v: '  linkedin   — open LinkedIn profile' },
-      { t: 'dim', v: '  projects   — list selected work' },
-      { t: 'dim', v: '  whoami     — a quick introduction' },
-      { t: 'dim', v: '  clear      — clear the terminal' },
-    ], 60);
+      { t: 'dim', v: '  about        — a short introduction' },
+      { t: 'dim', v: '  whoami       — alias of about' },
+      { t: 'dim', v: '  projects     — list selected work' },
+      { t: 'dim', v: '  resume       — download my resume' },
+      { t: 'dim', v: '  hire         — start a conversation' },
+      { t: 'dim', v: '  email        — show email address' },
+      { t: 'dim', v: '  phone        — show phone number' },
+      { t: 'dim', v: '  github       — open GitHub profile' },
+      { t: 'dim', v: '  linkedin     — open LinkedIn profile' },
+      { t: 'dim', v: '  coffee       — a short break' },
+      { t: 'dim', v: '  clear        — clear the terminal' },
+    ], 55);
+    if (cmd === 'sudo hire kanhaiya') return emit([
+      { t: 'ok', v: 'Permission granted.' },
+      { t: 'out', v: 'Offer letter pending…' },
+      { t: 'dim', v: '(Just kidding 😄)' },
+    ], 300);
+    if (cmd === 'cat motivation.txt' || cmd === 'motivation') return emit([
+      { t: 'dim', v: 'while (!successful) {' },
+      { t: 'dim', v: '    learn();' },
+      { t: 'dim', v: '    build();' },
+      { t: 'dim', v: '    improve();' },
+      { t: 'dim', v: '}' },
+    ], 120);
+    if (cmd === 'coffee') return emit([
+      { t: 'out', v: '☕' },
+      { t: 'ok', v: 'Compiling motivation…' },
+      { t: 'ok', v: 'Done.' },
+      { t: 'out', v: 'Now go build something awesome.' },
+    ], 260);
     if (cmd.startsWith('hire')) {
       await emit([
-        { t: 'ok', v: 'Opening a channel.' },
-        { t: 'ok', v: 'Composing email…' },
-        { t: 'out', v: `Reach out directly: ${PROFILE.email}` },
+        { t: 'ok', v: 'Initializing hiring protocol…' },
+        { t: 'ok', v: '✓ Resume loaded' },
+        { t: 'ok', v: '✓ Projects verified' },
+        { t: 'ok', v: '✓ Production systems detected' },
+        { t: 'out', v: 'Ready for interview.' },
+        { t: 'dim', v: `Reach out directly: ${PROFILE.email}` },
       ], 260);
-      setTimeout(() => window.location.href = `mailto:${PROFILE.email}?subject=Let%27s%20build%20something`, 500);
+      setTimeout(() => window.location.href = `mailto:${PROFILE.email}?subject=Let%27s%20build%20something`, 400);
       return;
     }
-    if (cmd === 'resume') { setTimeout(() => window.open(PROFILE.resume, '_blank', 'noopener,noreferrer'), 900); return emit([
-      { t: 'ok', v: 'Preparing resume\u2026' },
-      { t: 'out', v: 'Kanhaiya Lal Sharma \u2014 Software Engineer.' },
-      { t: 'out', v: 'B.Tech CSE, KIIT (2022\u20132026). Focus: AI, backend, full-stack.' },
-      { t: 'out', v: `Direct download: ${PROFILE.resume}` },
-    ], 240); }
+    if (cmd === 'resume') {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ach:resume'));
+      setTimeout(() => window.open(PROFILE.resume, '_blank', 'noopener,noreferrer'), 900);
+      return emit([
+        { t: 'ok', v: 'Preparing resume…' },
+        { t: 'out', v: 'Kanhaiya Lal Sharma — Software Engineer.' },
+        { t: 'out', v: 'B.Tech CSE, KIIT (2022–2026). Focus: AI, backend, full-stack.' },
+        { t: 'out', v: `Direct download: ${PROFILE.resume}` },
+      ], 240);
+    }
     if (cmd === 'email') return emit([{ t: 'out', v: PROFILE.email }]);
     if (cmd === 'phone') return emit([{ t: 'out', v: PROFILE.phone }]);
-    if (cmd === 'github') { await emit([{ t: 'ok', v: 'Opening GitHub\u2026' }]); window.open(PROFILE.github, '_blank', 'noopener,noreferrer'); return; }
-    if (cmd === 'linkedin') { await emit([{ t: 'ok', v: 'Opening LinkedIn\u2026' }]); window.open(PROFILE.linkedin, '_blank', 'noopener,noreferrer'); return; }
+    if (cmd === 'github') { await emit([{ t: 'ok', v: 'Opening GitHub…' }]); window.open(PROFILE.github, '_blank', 'noopener,noreferrer'); return; }
+    if (cmd === 'linkedin') { await emit([{ t: 'ok', v: 'Opening LinkedIn…' }]); window.open(PROFILE.linkedin, '_blank', 'noopener,noreferrer'); return; }
     if (cmd === 'projects') return emit(PROJECTS.map(p => ({ t: 'out', v: `• ${p.name} — ${p.subtitle}` })), 140);
-    if (cmd === 'whoami') return emit([
-      { t: 'out', v: 'Kanhaiya Lal Sharma · Software Engineer' },
-      { t: 'out', v: `${PROFILE.institute} · Graduating ${PROFILE.graduation}` },
-      { t: 'out', v: 'I build production software: applied AI, backend, product.' },
-    ], 200);
+    if (cmd === 'about' || cmd === 'whoami') return emit([
+      { t: 'out', v: 'Kanhaiya Sharma' },
+      { t: 'out', v: 'Software Engineer' },
+      { t: 'out', v: 'AI Engineer' },
+      { t: 'dim', v: 'Building production software using AI, backend systems, and modern web technologies.' },
+      { t: 'dim', v: 'KIIT 2026.' },
+      { t: 'dim', v: 'Open to Software Engineer and AI Engineer opportunities.' },
+    ], 180);
     if (cmd === 'clear') { setHistory([]); return; }
     return emit([{ t: 'err', v: `command not found: ${cmd}. type "help".` }]);
   };
@@ -870,10 +1027,12 @@ function Contact() {
                 <form onSubmit={submit} className="flex items-center gap-2 pt-2">
                   <span className="text-[#0FA47A]">→</span>
                   <input autoFocus value={input} onChange={(e) => setInput(e.target.value)}
+                    onFocus={() => { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ach:terminal')); }}
                     disabled={busy}
+                    aria-label="Terminal input"
                     className="flex-1 bg-transparent outline-none text-white placeholder:text-white/25 disabled:opacity-40"
                     placeholder={busy ? '' : 'try: help'} />
-                  <span className="w-1.5 h-4 bg-[#0FA47A] blink" />
+                  <span className="w-1.5 h-4 bg-[#0FA47A] blink" aria-hidden="true" />
                 </form>
               </div>
             </div>
@@ -911,6 +1070,242 @@ function Footer() {
   );
 }
 
+
+/* ---------- Achievement Toasts ---------- */
+const ACHIEVEMENTS_MAP = {
+  'ach:terminal': '🏆 Opened terminal',
+  'ach:resume': '🏆 Resume downloaded',
+  'ach:hiresense': '🏆 Explored HireSense',
+  'ach:projects': '🏆 Viewed all projects',
+};
+
+function AchievementToasts() {
+  const [items, setItems] = useState([]);
+  const [seen, setSeen] = useState(new Set());
+
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('kls_ach') || '[]');
+      setSeen(new Set(s));
+    } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    const handle = (name) => (e) => {
+      if (seen.has(name)) return;
+      setSeen(prev => {
+        const next = new Set(prev); next.add(name);
+        try { localStorage.setItem('kls_ach', JSON.stringify(Array.from(next))); } catch { /* noop */ }
+        return next;
+      });
+      const id = Math.random().toString(36).slice(2);
+      setItems(list => [...list, { id, label: ACHIEVEMENTS_MAP[name] }]);
+      setTimeout(() => setItems(list => list.filter(x => x.id !== id)), 4200);
+    };
+    const handlers = Object.keys(ACHIEVEMENTS_MAP).map(n => [n, handle(n)]);
+    handlers.forEach(([n, h]) => window.addEventListener(n, h));
+    return () => handlers.forEach(([n, h]) => window.removeEventListener(n, h));
+  }, [seen]);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[70] flex flex-col gap-2 pointer-events-none" aria-live="polite" aria-atomic="true">
+      <AnimatePresence>
+        {items.map(item => (
+          <motion.div key={item.id}
+            initial={{ opacity: 0, x: 40, filter: 'blur(6px)' }}
+            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, x: 40, filter: 'blur(4px)' }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            className="pointer-events-auto rounded-full border border-white/10 bg-[#0E0E10]/95 backdrop-blur px-4 py-2.5 font-mono text-[12px] text-white/90 shadow-[0_20px_60px_-30px_rgba(15,164,122,0.4)]">
+            {item.label}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ---------- Command Palette ---------- */
+function CommandPalette() {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [i, setI] = useState(0);
+  const inputRef = useRef(null);
+
+  const actions = React.useMemo(() => ([
+    { id: 'work',       label: 'Projects',              hint: 'Selected work',        run: () => document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' }) },
+    { id: 'about',      label: 'Journey',               hint: 'About & timeline',     run: () => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }) },
+    { id: 'skills',     label: 'Craft',                 hint: 'Skills',               run: () => document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' }) },
+    { id: 'contact',    label: 'Contact',               hint: 'Terminal & email',     run: () => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }) },
+    { id: 'resume',     label: 'Resume',                hint: 'Download PDF',         run: () => window.open(PROFILE.resume, '_blank', 'noopener,noreferrer'), ext: true },
+    { id: 'github',     label: 'GitHub',                hint: 'External',             run: () => window.open(PROFILE.github, '_blank', 'noopener,noreferrer'), ext: true },
+    { id: 'linkedin',   label: 'LinkedIn',              hint: 'External',             run: () => window.open(PROFILE.linkedin, '_blank', 'noopener,noreferrer'), ext: true },
+    { id: 'hiresense',  label: 'HireSense · Live Demo', hint: 'hiresense-ai.vercel.app', run: () => { window.dispatchEvent(new CustomEvent('ach:hiresense')); window.open('https://hiresense-ai-roan.vercel.app/', '_blank', 'noopener,noreferrer'); }, ext: true },
+    { id: 'email',      label: 'Email Kanhaiya',        hint: PROFILE.email,          run: () => { window.location.href = `mailto:${PROFILE.email}`; } },
+  ]), []);
+
+  const filtered = q.trim() === ''
+    ? actions
+    : actions.filter(a => (a.label + ' ' + a.hint).toLowerCase().includes(q.toLowerCase()));
+
+  useEffect(() => {
+    const onKey = (e) => {
+      const isK = (e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey);
+      if (isK) { e.preventDefault(); setOpen(v => !v); setQ(''); setI(0); return; }
+      if (!open) return;
+      if (e.key === 'Escape') { e.preventDefault(); setOpen(false); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setI(v => Math.min(filtered.length - 1, v + 1)); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); setI(v => Math.max(0, v - 1)); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const a = filtered[i];
+        if (a) { a.run(); setOpen(false); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, filtered, i]);
+
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 30); }, [open]);
+  useEffect(() => { setI(0); }, [q]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[80] flex items-start justify-center pt-[16vh] px-4"
+          role="dialog" aria-modal="true" aria-label="Command palette"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0E0E10]/95 backdrop-blur-xl shadow-[0_60px_120px_-40px_rgba(0,0,0,0.7)] overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-white/6">
+              <Search className="w-4 h-4 text-[#0FA47A]" aria-hidden="true" />
+              <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)}
+                placeholder="Search or jump to…"
+                className="flex-1 bg-transparent outline-none text-white placeholder:text-white/30 font-body text-[15px]" />
+              <span className="chip">ESC</span>
+            </div>
+            <div className="max-h-[52vh] overflow-y-auto py-2">
+              {filtered.length === 0 && (
+                <div className="px-5 py-6 font-mono text-[13px] text-white/40">No matches.</div>
+              )}
+              {filtered.map((a, idx) => (
+                <button key={a.id}
+                  data-hover
+                  onMouseEnter={() => setI(idx)}
+                  onClick={() => { a.run(); setOpen(false); }}
+                  className={`w-full flex items-center justify-between gap-4 px-5 py-3 text-left transition-colors ${idx === i ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'}`}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-white font-body text-[14px]">{a.label}</span>
+                    <span className="text-white/40 font-mono text-[11px]">{a.hint}</span>
+                  </div>
+                  {a.ext
+                    ? <ArrowUpRight className="w-3.5 h-3.5 text-white/40" aria-hidden="true" />
+                    : <ChevronRight className="w-3.5 h-3.5 text-white/40" aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-between px-5 py-3 border-t border-white/6 font-mono text-[10px] text-white/40">
+              <span>↑↓ navigate · ↵ open · Esc close</span>
+              <span>⌘K to toggle</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ---------- Engineering Notes Drawer ---------- */
+function EngineeringNotesDrawer({ open, onClose, projectName, notes }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [open, onClose]);
+
+  const sections = notes ? [
+    { k: 'Problem', v: notes.problem },
+    { k: 'Architecture', v: notes.architecture },
+    { k: 'Technical decisions', v: notes.decisions },
+    { k: 'Challenges', v: notes.challenges },
+    { k: 'Trade-offs', v: notes.tradeoffs },
+    { k: 'Future improvements', v: notes.future },
+  ] : [];
+
+  return (
+    <AnimatePresence>
+      {open && notes && (
+        <motion.div className="fixed inset-0 z-[75]"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+          role="dialog" aria-modal="true" aria-labelledby="eng-notes-title">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          <motion.aside
+            initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 40, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 top-0 h-full w-full sm:max-w-[560px] bg-[#0E0E10] border-l border-white/8 overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-white/6 bg-[#0E0E10]/95 backdrop-blur">
+              <div className="font-mono text-[11px] tracking-[0.3em] text-white/45">ENGINEERING NOTES</div>
+              <button data-hover onClick={onClose} aria-label="Close engineering notes"
+                className="chip hover:border-white/30 hover:text-white">ESC · Close</button>
+            </div>
+            <div className="px-6 pt-8 pb-16">
+              <h3 id="eng-notes-title" className="font-display text-[clamp(1.8rem,4vw,2.6rem)] leading-[1.05] tracking-[-0.03em]">
+                {projectName} <span className="font-serif-display accent">— under the hood.</span>
+              </h3>
+              <div className="mt-10 space-y-10">
+                {sections.map(s => (
+                  <div key={s.k}>
+                    <div className="font-mono text-[10px] tracking-[0.3em] text-white/40">{s.k.toUpperCase()}</div>
+                    {Array.isArray(s.v) ? (
+                      <ul className="mt-3 space-y-2">
+                        {s.v.map((line, idx) => (
+                          <li key={idx} className="flex gap-3 text-white/75 font-body text-[15px] leading-[1.65]">
+                            <span className="text-[#0FA47A] mt-2 shrink-0 w-1.5 h-1.5 rounded-full" aria-hidden="true" />
+                            <span>{line}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-white/75 font-body text-[15px] leading-[1.65]">{s.v}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.aside>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ---------- Command Palette hint button ---------- */
+function KbdHint() {
+  const [mac, setMac] = useState(false);
+  useEffect(() => {
+    setMac(/Mac|iPod|iPhone|iPad/.test(navigator.platform));
+  }, []);
+  return (
+    <button
+      data-hover
+      onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+      aria-label="Open command palette"
+      className="hidden md:inline-flex items-center gap-2 chip hover:border-white/25 hover:text-white">
+      <Search className="w-3 h-3" aria-hidden="true" />
+      <span className="tabular-nums">{mac ? '⌘' : 'Ctrl'} K</span>
+    </button>
+  );
+}
+
 /* ---------- App ---------- */
 function App() {
   const [ready, setReady] = useState(false);
@@ -929,6 +1324,8 @@ function App() {
         <Contact />
         <Footer />
       </motion.div>
+      <CommandPalette />
+      <AchievementToasts />
     </main>
   );
 }
