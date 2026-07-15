@@ -496,18 +496,27 @@ function About() {
         <div className="mt-20 grid md:grid-cols-12 gap-10">
           <div className="md:col-span-4 md:sticky md:top-32 self-start">
             <motion.div
-              initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+              initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
               whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.9, ease: [0.16,1,0.3,1] }}
-              className="mb-8 w-[140px]">
+              transition={{ duration: 1.1, ease: [0.16,1,0.3,1] }}
+              className="mb-8 w-[160px] group">
               <div className="relative rounded-2xl border border-white/12 bg-[#0E0E10] overflow-hidden aspect-[4/5] shadow-[0_20px_60px_-30px_rgba(0,0,0,0.6)]">
-                <div className="absolute inset-0 grayscale contrast-125 opacity-90"
-                  style={{ background: 'linear-gradient(180deg, rgba(245,244,241,0.10) 0%, rgba(245,244,241,0.03) 60%, transparent 100%)' }} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-serif-display italic text-white/30 text-5xl">K</span>
+                <img
+                  src="/portrait.jpg"
+                  alt="Portrait of Kanhaiya Lal Sharma"
+                  width={320}
+                  height={400}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover grayscale contrast-[1.05] brightness-[0.92] transition-all duration-700 ease-out group-hover:grayscale-0 group-hover:brightness-100"
+                />
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(180deg, rgba(10,10,11,0) 55%, rgba(10,10,11,0.55) 100%)' }} />
+                <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between font-mono text-[9px] tracking-[0.25em] text-white/70">
+                  <span>KLS · 2026</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0FA47A]" aria-hidden="true" />
                 </div>
-                <div className="absolute bottom-2 left-2 right-2 font-mono text-[9px] tracking-[0.25em] text-white/40">PORTRAIT · TBA</div>
               </div>
             </motion.div>
             <div className="font-serif-display italic text-white/85 text-2xl leading-snug">
