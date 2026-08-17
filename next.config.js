@@ -23,6 +23,15 @@ const nextConfig = {
     maxInactiveAge: 10000,
     pagesBufferLength: 2,
   },
+  async redirects() {
+    return [
+      {
+        source: "/Kanhaiya_Lal_Sharma__v3",
+        destination: "/Kanhaiya_Lal_Sharma__v3.pdf",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
