@@ -10,7 +10,7 @@ const PROFILE = {
   phone: '+91 9123678922',
   github: 'https://github.com/kanhaiyas103',
   linkedin: 'https://www.linkedin.com/in/kanhaiya-lal-sharma-a70a72293',
-  resume: '/resume.pdf',
+  resume: '/Kanhaiya_Lal_Sharma__v3',
   graduation: '2026',
   institute: 'KIIT, Bhubaneswar',
 };
